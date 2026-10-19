@@ -1,0 +1,23 @@
+name: Test install
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  scoop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scoop, then kickFile from this bucket
+        shell: pwsh
+        run: |
+          Invoke-RestMethod -Uri https://get.scoop.sh -OutFile install.ps1
+          .\install.ps1 -RunAsAdmin
+          $env:PATH = "$env:USERPROFILE\scoop\shims;$env:PATH"
+          scoop bucket add local "$PWD"
+          scoop install local/kickfile
+          $exe = "$env:USERPROFILE\scoop\apps\kickfile\current\kickfile.exe"
+          if (!(Test-Path $exe)) { throw "kickfile.exe missing" }
+          if (!(Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Scoop Apps\kickFile.lnk")) { throw "no Start menu shortcut" }
+          scoop uninstall kickfile
+          Write-Host "scoop install + uninstall OK"
